@@ -1,3 +1,4 @@
+/* eslint-env browser */
 /* =====================================================================
    HERRRING Scroll-Story — Custom Element für Wix (Dev Mode / Velo)
    Ablage:  public/custom-elements/herrring-scrollstory.js
@@ -11,8 +12,9 @@
      frame-count-mobile   Optional, Vorgabe 110
      bg-color             Optional, Vorgabe #2F2E2E — "transparent" lässt den
                           Wix-Abschnitt durchscheinen
-     text-color           Optional, Vorgabe #FFFFFF — auf hellem Grund z. B. #2F2E2E
-     accent-color         Optional, Vorgabe #CCE4FF
+     text-color           Optional, Vorgabe #FFFFFF
+     accent-color         Optional, Vorgabe #3EA6FE (Blau der Wortmarke)
+     number-color         Optional, Vorgabe #3EA6FE — Alternativen #F66762 oder #FFFFFF
      hud                  Optional, "off" blendet Texte und Fortschrittsleiste aus
      scroll-height        Optional, Vorgabe 300vh
 
@@ -28,35 +30,36 @@ const CSS = `
 canvas{display:block; width:100%; height:100%}
 .hud{position:absolute; inset:0; pointer-events:none; padding:clamp(20px,5vw,64px);
   display:flex; flex-direction:column; justify-content:space-between;
-  font-family:Arial,"Liberation Sans",Helvetica,sans-serif;
+  font-family:"Courier New",Courier,"Nimbus Mono PS",monospace;
   color:var(--fg,#fff); opacity:var(--hud,1)}
-.hud-top{display:flex; justify-content:space-between; align-items:flex-start}
-.brand{font-size:12px; letter-spacing:.34em; opacity:.45}
-.brand b{font-weight:700; opacity:1}
-.display{font-family:"Didot","Bodoni 72","Playfair Display",Georgia,serif; font-weight:700}
-.no{font-size:clamp(46px,9vw,110px); line-height:.82; opacity:.14; letter-spacing:-.02em}
-.cap{max-width:34ch}
-.cap .rule{width:34px; height:1px; background:var(--accent,#CCE4FF); margin:0 0 18px;
+.hud-top{display:flex; justify-content:flex-end; align-items:flex-start}
+.display{font-family:"Courier New",Courier,"Nimbus Mono PS",monospace; font-weight:700}
+.no{font-size:clamp(40px,7.5vw,92px); line-height:.82; letter-spacing:-.01em;
+  color:var(--num,#3EA6FE); opacity:.85; text-shadow:0 2px 16px rgba(0,0,0,.55)}
+.cap{max-width:38ch}
+.cap .rule{width:34px; height:1px; background:var(--accent,#3EA6FE); margin:0 0 18px;
   transform-origin:left}
-.cap h2{margin:0 0 .5rem; font-size:clamp(24px,4.2vw,46px); line-height:1.04}
-.cap p{margin:0; font-size:clamp(13px,1.5vw,15px); line-height:1.55; opacity:.7; max-width:38ch}
+.cap h2{margin:0 0 .7rem; font-size:clamp(19px,3.1vw,34px); line-height:1.12;
+  letter-spacing:-.01em; text-shadow:0 2px 14px rgba(0,0,0,.7)}
+.cap p{margin:0; font-size:clamp(12px,1.35vw,14px); line-height:1.7; opacity:.78;
+  max-width:44ch; text-shadow:0 1px 12px rgba(0,0,0,.85)}
 .chain{position:absolute; left:clamp(16px,4vw,56px); top:50%; transform:translateY(-50%);
   height:min(46svh,320px); width:44px; pointer-events:none; opacity:var(--hud,1)}
 .spine,.fill{position:absolute; left:11px; top:0; width:1px}
 .spine{bottom:0; background:var(--fg,#fff); opacity:.18}
-.fill{height:0%; background:var(--accent,#CCE4FF)}
+.fill{height:0%; background:var(--accent,#3EA6FE)}
 .tick{position:absolute; left:0; width:23px; height:1px; background:var(--fg,#fff);
   opacity:.18; transition:opacity .3s}
 .tick.on{opacity:.9}
-.tick i{position:absolute; left:31px; top:-7px; font-size:10px; letter-spacing:.14em;
-  font-style:normal; color:var(--fg,#fff); opacity:.45; font-variant-numeric:tabular-nums;
-  transition:opacity .3s}
+.tick i{position:absolute; left:31px; top:-7px; font-size:10px; letter-spacing:.06em;
+  font-style:normal; font-family:"Courier New",Courier,monospace;
+  color:var(--fg,#fff); opacity:.45; transition:opacity .3s}
 .tick.on i{opacity:1}
 .loader{position:absolute; inset:0; display:grid; place-items:center;
-  font-family:Arial,Helvetica,sans-serif; font-size:11px; letter-spacing:.22em;
+  font-family:"Courier New",Courier,monospace; font-size:11px; letter-spacing:.14em;
   color:var(--fg,#fff); opacity:.45; transition:opacity .4s}
 .loader.done{opacity:0; pointer-events:none}
-@media (max-width:640px){ .cap{max-width:26ch} .chain{display:none} }
+@media (max-width:640px){ .cap{max-width:30ch} .chain{display:none} }
 `;
 
 /* ==========================================================================
@@ -67,9 +70,12 @@ canvas{display:block; width:100%; height:100%}
    mit dem V3 beginnt. Deshalb sind keine Blenden nötig.
    ========================================================================== */
 const CHAPTERS = [
-  {u:0.00, t:"Der Grundriss", d:"Aus der Fläche wächst der Baukörper — Wände, Dach, Kubatur."},
-  {u:0.32, t:"Das Haus",      d:"Fassade, Dachdeckung und Öffnungen treten hinzu."},
-  {u:0.63, t:"Die Schichten", d:"Bodenplatte, Geschosse, Dach — auseinandergezogen und wieder zusammen."}
+  {u:0.00, t:"Entwerfen",
+   d:"Am Anfang steht das architektonische Konzept. Aus dem Grundriss entwickelt sich das Volumen — Kubatur, Proportion, Ausrichtung."},
+  {u:0.32, t:"Ausarbeiten",
+   d:"Das Konzept wird ausgearbeitet. Belichtung und Materialität werden festgelegt, aus dem Volumen wird Architektur."},
+  {u:0.63, t:"Analysieren",
+   d:"Zum Schluss werden Bauteile und Elemente konfiguriert, analysiert und visualisiert."}
 ];
 
 const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
@@ -119,6 +125,22 @@ function makeRenderer(cv, frames) {
 }
 
 
+/* Wix legt Custom Elements in Container mit fester Höhe und overflow:hidden.
+   Dort läuft eine 300vh hohe Scrollstrecke ins Leere. Wir öffnen nur die
+   Hüllen, die ausschließlich uns enthalten — fremde Layoutcontainer bleiben
+   unangetastet. */
+function unclip(host) {
+  let n = host.parentElement, i = 0;
+  while (n && i < 8 && n !== document.body) {
+    if (n.childElementCount !== 1) break;
+    n.style.height = "auto";
+    n.style.minHeight = "0";
+    n.style.maxHeight = "none";
+    n.style.overflow = "visible";
+    n = n.parentElement; i++;
+  }
+}
+
 function boot(root, host, opt) {
   const cv = root.querySelector("canvas");
   const capT = root.querySelector(".cap h2");
@@ -151,7 +173,7 @@ function boot(root, host, opt) {
     frames[i] = im;
   }
 
-  const gsapOk = () => typeof gsap !== "undefined" && window.ScrollTrigger;
+  const gsapOk = () => !!(window.gsap && window.ScrollTrigger);
 
   function setChapter(i) {
     if (i === chapter || i == null) return;
@@ -166,18 +188,18 @@ function boot(root, host, opt) {
     if (reduce || !gsapOk()) { write(); return; }
     if (first) {
       write();
-      gsap.fromTo([capT, capD], {y:12, opacity:0},
+      window.gsap.fromTo([capT, capD], {y:12, opacity:0},
         {y:0, opacity:1, duration:.5, stagger:.06, ease:"power2.out"});
-      gsap.fromTo(rule, {scaleX:0}, {scaleX:1, duration:.5, ease:"power2.out"});
+      window.gsap.fromTo(rule, {scaleX:0}, {scaleX:1, duration:.5, ease:"power2.out"});
       return;
     }
-    gsap.to([capT, capD], {
+    window.gsap.to([capT, capD], {
       y:-10, opacity:0, duration:.22, ease:"power2.in",
       onComplete: () => {
         write();
-        gsap.fromTo([capT, capD], {y:12, opacity:0},
+        window.gsap.fromTo([capT, capD], {y:12, opacity:0},
           {y:0, opacity:1, duration:.5, stagger:.06, ease:"power2.out"});
-        gsap.fromTo(rule, {scaleX:0}, {scaleX:1, duration:.45, ease:"power2.out"});
+        window.gsap.fromTo(rule, {scaleX:0}, {scaleX:1, duration:.45, ease:"power2.out"});
       }
     });
   }
@@ -194,10 +216,21 @@ function boot(root, host, opt) {
     R = makeRenderer(cv, frames);
     R.resize();
 
+    unclip(host);
+    const span = host.getBoundingClientRect().height - innerHeight;
+    if (span <= 0) {
+      console.warn(
+        "[scrollstory] Keine Scrollstrecke: Elementhöhe " +
+        Math.round(host.getBoundingClientRect().height) + "px bei Fensterhöhe " +
+        innerHeight + "px. Der umgebende Wix-Container begrenzt die Höhe — " +
+        "Sektion auf 'auto' stellen oder das Element im Editor höher ziehen."
+      );
+    }
+
     if (gsapOk()) {
-      gsap.registerPlugin(ScrollTrigger);
+      window.gsap.registerPlugin(window.ScrollTrigger);
       const proxy = { p: 0 };
-      gsap.to(proxy, {
+      window.gsap.to(proxy, {
         p: 1, ease: "none",
         onUpdate: () => paint(proxy.p),
         scrollTrigger: {
@@ -205,8 +238,8 @@ function boot(root, host, opt) {
           scrub: reduce ? true : 0.5, invalidateOnRefresh: true
         }
       });
-      ScrollTrigger.addEventListener("refreshInit", () => R.resize());
-      addEventListener("resize", () => { R.resize(); ScrollTrigger.refresh(); }, {passive:true});
+      window.ScrollTrigger.addEventListener("refreshInit", () => R.resize());
+      addEventListener("resize", () => { R.resize(); window.ScrollTrigger.refresh(); }, {passive:true});
       paint(0);
     } else {
       let target = 0, cur = 0, raf = null;
@@ -250,7 +283,7 @@ function loadScript(src) {
 }
 
 async function ensureGsap() {
-  if (typeof gsap !== "undefined" && window.ScrollTrigger) return;
+  if (window.gsap && window.ScrollTrigger) return;
   for (const u of GSAP_URLS) await loadScript(u);
 }
 
@@ -264,7 +297,6 @@ class HerrringScrollStory extends HTMLElement {
   <canvas></canvas>
   <div class="hud">
     <div class="hud-top">
-      <div class="brand">HE<b>RRR</b>ING</div>
       <div class="no display">01</div>
     </div>
     <div class="cap">
@@ -279,10 +311,13 @@ class HerrringScrollStory extends HTMLElement {
 `;
 
     this.style.display = "block";
-    this.style.height = attr("scroll-height", "300vh");
+    this.style.position = "relative";
+    this.style.setProperty("height", attr("scroll-height", "300vh"), "important");
+    this.style.setProperty("max-height", "none", "important");
     this.style.setProperty("--bg", attr("bg-color", "#2F2E2E"));
     this.style.setProperty("--fg", attr("text-color", "#FFFFFF"));
-    this.style.setProperty("--accent", attr("accent-color", "#CCE4FF"));
+    this.style.setProperty("--accent", attr("accent-color", "#3EA6FE"));
+    this.style.setProperty("--num", attr("number-color", "#3EA6FE"));
     if (attr("hud", "on") === "off") this.style.setProperty("--hud", "0");
 
     await ensureGsap();
